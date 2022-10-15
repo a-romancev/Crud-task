@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"github.com/a-romancev/crud_task/company"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -14,19 +15,28 @@ import (
 	"time"
 )
 
-const webAddr = "0.0.0.0:9999"
-
 func main() {
+	var confPath string
+	flag.StringVar(&confPath, "conf", ".", "PATH to config folder")
+	flag.Parse()
+
+	var conf Config
+	conf = conf.WithFile(confPath)
+	err := conf.Validate()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	ctx := context.Background()
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
 	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(fmt.Sprintf(
 		"mongodb://%s:%s@%s/%s",
-		"mongodb",
-		"mongodb",
-		"mongo",
-		"company",
+		conf.Mongo.Host,
+		conf.Mongo.Password,
+		conf.Mongo.Host,
+		conf.Mongo.Database,
 	)))
 	if err != nil {
 		log.Fatal("Failed to connect to mongo.")
@@ -36,11 +46,11 @@ func main() {
 	companyCRUD := company.NewCRUD(companyMongo)
 
 	webServer := &http.Server{
-		Addr:    webAddr,
+		Addr:    conf.ListenWebAddress,
 		Handler: NewHandler(companyCRUD),
 	}
 	go func() {
-		log.Printf("Web listening on %s.", webAddr)
+		log.Printf("Web listening on %s.", conf.ListenWebAddress)
 		err := webServer.ListenAndServe()
 		if err != nil {
 			if errors.Is(err, http.ErrServerClosed) {
