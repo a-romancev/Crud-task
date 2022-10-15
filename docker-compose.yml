@@ -12,5 +12,8 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=mongo
       - MONGO_INITDB_ROOT_PASSWORD=mongo
+      - MONGO_INITDB_DATABASE=company
+      - MONGO_INITDB_USER=mongodb
+      - MONGO_INITDB_PWD=mongodb
     volumes:
       - .artifacts/mongo/:/data/db

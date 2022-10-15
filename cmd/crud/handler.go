@@ -1,18 +1,31 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
+	"github.com/a-romancev/crud_task/company"
+	"github.com/google/uuid"
+	"io"
 	"net/http"
 )
 
+const bodySizeLimit = 1000
+
 type Handler struct {
 	router http.Handler
+	crud   *company.CRUD
 }
 
-func NewHandler() *Handler {
+func NewHandler(crud *company.CRUD) *Handler {
+	h := Handler{crud: crud}
 	r := http.NewServeMux()
 
 	r.HandleFunc("/health", health)
-	return &Handler{router: r}
+	r.HandleFunc("/v1/companies", h.companies)
+	r.HandleFunc("/v1/companies:id", h.companiesByID)
+
+	h.router = r
+	return &h
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -28,4 +41,99 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func health(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write([]byte("ok"))
+}
+
+func (h *Handler) companies(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		var cmp company.Company
+		cmp.ID = uuid.New()
+		err := json.NewDecoder(io.LimitReader(r.Body, bodySizeLimit)).Decode(&cmp)
+		if err != nil {
+			newAPIError(http.StatusBadRequest, "Invalid company data", err).Write(w)
+			return
+		}
+		err = cmp.Validate()
+		if err != nil {
+			newAPIError(http.StatusBadRequest, "Invalid company data", err).Write(w)
+			return
+		}
+		created, err := h.crud.Repo.Create(r.Context(), cmp)
+		if err != nil {
+			newAPIError(http.StatusBadRequest, "Company creation failed", err).Write(w)
+			return
+		}
+		apiResponse{Code: http.StatusCreated, Body: created}.Write(w)
+	case http.MethodGet:
+		fetched, err := h.crud.Repo.Fetch(context.Background(), company.Lookup{})
+		if err != nil {
+			newAPIError(http.StatusBadRequest, "Failed to fetch companies", err).Write(w)
+			return
+		}
+		apiResponse{Code: http.StatusOK, Body: fetched}.Write(w)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+}
+
+func (h *Handler) companiesByID(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		fetched, err := h.crud.Repo.FetchOne(context.Background(), company.Lookup{})
+		if err != nil {
+			newAPIError(http.StatusBadRequest, "Failed to fetch companies", err).Write(w)
+			return
+		}
+		apiResponse{Code: http.StatusOK, Body: fetched}.Write(w)
+	case http.MethodPut:
+		var cmp company.Company
+		cmp.ID = uuid.New()
+		err := json.NewDecoder(io.LimitReader(r.Body, bodySizeLimit)).Decode(&cmp)
+		if err != nil {
+			newAPIError(http.StatusBadRequest, "Invalid company data", err).Write(w)
+			return
+		}
+		err = cmp.Validate()
+		if err != nil {
+			newAPIError(http.StatusBadRequest, "Invalid company data", err).Write(w)
+			return
+		}
+		created, err := h.crud.Repo.UpdateOne(r.Context(), company.Lookup{}, cmp)
+		if err != nil {
+			newAPIError(http.StatusBadRequest, "Company creation failed", err).Write(w)
+			return
+		}
+		apiResponse{Code: http.StatusCreated, Body: created}.Write(w)
+	case http.MethodDelete:
+		err := h.crud.Repo.DeleteOne(r.Context(), company.Lookup{})
+		if err != nil {
+			newAPIError(http.StatusBadRequest, "Company creation failed", err).Write(w)
+			return
+		}
+		apiResponse{Code: http.StatusOK, Body: ""}.Write(w)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
+type errBody struct {
+	Msg   string `json:"msg"`
+	Error string `json:"error"`
+}
+
+func newAPIError(code int, msg string, err error) apiResponse {
+	return apiResponse{Code: code, Body: errBody{Msg: msg, Error: err.Error()}}
+}
+
+// apiResponse is used as a convenient wrapper to send responses.
+type apiResponse struct {
+	Code int
+	Body interface{}
+}
+
+func (r apiResponse) Write(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(r.Code)
+	_ = json.NewEncoder(w).Encode(r.Body)
 }
