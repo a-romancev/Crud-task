@@ -1,0 +1,16 @@
+version: '3.9'
+services:
+  crud:
+    build:
+      context: .
+      dockerfile: cmd/crud/Dockerfile
+    ports:
+      - 9999:9999
+  mongo:
+    image: mongo:4.4
+    command: "mongod --dbpath /data/db"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=mongo
+      - MONGO_INITDB_ROOT_PASSWORD=mongo
+    volumes:
+      - .artifacts/mongo/:/data/db
