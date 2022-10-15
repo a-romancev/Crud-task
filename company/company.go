@@ -46,7 +46,7 @@ func (c Company) Validate() error {
 }
 
 type Lookup struct {
-	ID           uuid.UUID `json:"id"`
+	ID uuid.UUID `json:"id"`
 }
 
 func checkIn(a string, list []string) bool {

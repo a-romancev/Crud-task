@@ -9,7 +9,6 @@ import (
 )
 
 const (
-	batchLimit = 500
 	collection = "companies"
 )
 
@@ -24,7 +23,6 @@ func NewMongo(db *mongo.Database) *Mongo {
 }
 
 func (m Mongo) Create(ctx context.Context, request Company) (Company, error) {
-
 	_, err := m.db.Collection(collection).InsertOne(ctx, request)
 	switch {
 	case mongo.IsDuplicateKeyError(err):
