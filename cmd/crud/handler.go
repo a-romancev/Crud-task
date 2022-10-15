@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/a-romancev/crud_task/company"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 	"io"
 	"net/http"
 )
@@ -33,6 +34,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	defer func() {
 		if err := recover(); err != nil {
+			log.Ctx(ctx).Error().Interface("error", err).Msg("Recovered server error.")
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 	}()
@@ -50,28 +52,33 @@ func (h *Handler) companies(w http.ResponseWriter, r *http.Request) {
 		cmp.ID = uuid.New()
 		err := json.NewDecoder(io.LimitReader(r.Body, bodySizeLimit)).Decode(&cmp)
 		if err != nil {
-			newAPIError(http.StatusBadRequest, "Invalid company data", err).Write(w)
+			log.Ctx(r.Context()).Error().Err(err).Msg("Invalid company data.")
+			newAPIError(http.StatusBadRequest, "Invalid company data.", err).Write(w)
 			return
 		}
 		err = cmp.Validate()
 		if err != nil {
+			log.Ctx(r.Context()).Error().Err(err).Msg("Invalid company data.")
 			newAPIError(http.StatusBadRequest, "Invalid company data", err).Write(w)
 			return
 		}
 		created, err := h.crud.Repo.Create(r.Context(), cmp)
 		if err != nil {
-			newAPIError(http.StatusBadRequest, "Company creation failed", err).Write(w)
+			log.Ctx(r.Context()).Error().Err(err).Msg("Company creation failed.")
+			newAPIError(http.StatusBadRequest, "Company creation failed.", err).Write(w)
 			return
 		}
 		apiResponse{Code: http.StatusCreated, Body: created}.Write(w)
 	case http.MethodGet:
 		fetched, err := h.crud.Repo.Fetch(context.Background(), company.Lookup{})
 		if err != nil {
-			newAPIError(http.StatusBadRequest, "Failed to fetch companies", err).Write(w)
+			log.Ctx(r.Context()).Error().Err(err).Msg("Failed to fetch companies.")
+			newAPIError(http.StatusBadRequest, "Failed to fetch companies.", err).Write(w)
 			return
 		}
 		apiResponse{Code: http.StatusOK, Body: fetched}.Write(w)
 	default:
+		log.Ctx(r.Context()).Error().Str("method", r.Method).Msg("Http method not allowed.")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
@@ -82,7 +89,8 @@ func (h *Handler) companiesByID(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		fetched, err := h.crud.Repo.FetchOne(context.Background(), company.Lookup{})
 		if err != nil {
-			newAPIError(http.StatusBadRequest, "Failed to fetch companies", err).Write(w)
+			log.Ctx(r.Context()).Error().Err(err).Msg("Failed to fetch companies.")
+			newAPIError(http.StatusBadRequest, "Failed to fetch companies.", err).Write(w)
 			return
 		}
 		apiResponse{Code: http.StatusOK, Body: fetched}.Write(w)
@@ -91,28 +99,33 @@ func (h *Handler) companiesByID(w http.ResponseWriter, r *http.Request) {
 		cmp.ID = uuid.New()
 		err := json.NewDecoder(io.LimitReader(r.Body, bodySizeLimit)).Decode(&cmp)
 		if err != nil {
+			log.Ctx(r.Context()).Error().Err(err).Msg("Invalid company data.")
 			newAPIError(http.StatusBadRequest, "Invalid company data", err).Write(w)
 			return
 		}
 		err = cmp.Validate()
 		if err != nil {
+			log.Ctx(r.Context()).Error().Err(err).Msg("Invalid company data.")
 			newAPIError(http.StatusBadRequest, "Invalid company data", err).Write(w)
 			return
 		}
 		created, err := h.crud.Repo.UpdateOne(r.Context(), company.Lookup{}, cmp)
 		if err != nil {
-			newAPIError(http.StatusBadRequest, "Company creation failed", err).Write(w)
+			log.Ctx(r.Context()).Error().Err(err).Msg("Company creation failed.")
+			newAPIError(http.StatusBadRequest, "Company creation failed.", err).Write(w)
 			return
 		}
 		apiResponse{Code: http.StatusCreated, Body: created}.Write(w)
 	case http.MethodDelete:
 		err := h.crud.Repo.DeleteOne(r.Context(), company.Lookup{})
 		if err != nil {
-			newAPIError(http.StatusBadRequest, "Company creation failed", err).Write(w)
+			log.Ctx(r.Context()).Error().Err(err).Msg("Company creation failed.")
+			newAPIError(http.StatusBadRequest, "Company creation failed.", err).Write(w)
 			return
 		}
 		apiResponse{Code: http.StatusOK, Body: ""}.Write(w)
 	default:
+		log.Ctx(r.Context()).Error().Str("method", r.Method).Msg("Http method not allowed.")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }

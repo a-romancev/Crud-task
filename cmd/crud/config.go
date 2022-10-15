@@ -18,6 +18,7 @@ type Mongo struct {
 
 type Config struct {
 	ListenWebAddress string `mapstructure:"listen"`
+	LogLevel           string `mapstructure:"loglevel"`
 	Kafka            Kafka  `mapstructure:"kafka"`
 	Mongo            Mongo  `mapstructure:"mongo"`
 }
@@ -42,6 +43,9 @@ func (c Config) WithFile(confPath string) Config {
 func (c Config) Validate() error {
 	if c.ListenWebAddress == "" {
 		return errors.New("address not set")
+	}
+	if c.LogLevel == "" {
+		return errors.New("loglevel not set")
 	}
 	if c.Mongo.Host == "" {
 		return errors.New("mongoDB host not set")
