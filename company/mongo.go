@@ -86,7 +86,9 @@ func (m Mongo) UpdateOne(ctx context.Context, lookup Lookup, request Company) (C
 		"$set": request,
 	}
 	filter := make(bson.M)
-	filter["_id"] = lookup.ID
+	if lookup.ID != uuid.Nil {
+		filter["_id"] = lookup.ID
+	}
 	res := m.db.Collection(collection).FindOneAndUpdate(ctx, filter, update)
 	if res.Err() != nil {
 		return Company{}, res.Err()
@@ -102,7 +104,9 @@ func (m Mongo) UpdateOne(ctx context.Context, lookup Lookup, request Company) (C
 
 func (m Mongo) DeleteOne(ctx context.Context, lookup Lookup) error {
 	filter := make(bson.M)
-	filter["_id"] = lookup.ID
+	if lookup.ID != uuid.Nil {
+		filter["_id"] = lookup.ID
+	}
 	_, err := m.db.Collection(collection).DeleteOne(ctx, filter)
 	if err != nil {
 		return err

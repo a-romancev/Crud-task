@@ -72,8 +72,94 @@ func TestAPI(t *testing.T) {
 
 			resp, err := client.Do(ctx, http.MethodPost, fmt.Sprintf("http://%s/v1/companies", addr), bytes.NewReader(body))
 			require.NoError(t, err)
-
+			presCmp, err := io.ReadAll(resp.Body)
+			c := company.Company{}
+			err = json.Unmarshal(presCmp, &c)
+			require.NoError(t, err)
 			assert.Equal(t, http.StatusCreated, resp.StatusCode)
+			resp, err = client.Do(ctx, http.MethodGet, fmt.Sprintf("http://%s/v1/companies/%s", addr, c.ID), bytes.NewReader(body))
+			require.NoError(t, err)
+			gresCmp, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+			assert.Equal(t, http.StatusOK, resp.StatusCode)
+			assert.Equal(t, presCmp, gresCmp)
+		})
+	})
+	t.Run("Update company", func(t *testing.T) {
+		t.Run("Happy path", func(t *testing.T) {
+			t.Parallel()
+
+			ctx := context.Background()
+
+			client := NewClient(uuid.New(), http.DefaultClient)
+
+			employees := 1
+			reg := true
+			tp := "Corporations"
+			body, _ := json.Marshal(company.Company{
+				Name:         uuid.NewString()[:10],
+				EmployeesNum: &employees,
+				Registered:   &reg,
+				Type:         &tp,
+			})
+
+			resp, err := client.Do(ctx, http.MethodPost, fmt.Sprintf("http://%s/v1/companies", addr), bytes.NewReader(body))
+			require.NoError(t, err)
+			assert.Equal(t, http.StatusCreated, resp.StatusCode)
+			presCmp, err := io.ReadAll(resp.Body)
+			c := company.Company{}
+			err = json.Unmarshal(presCmp, &c)
+			require.NoError(t, err)
+
+			body, _ = json.Marshal(company.Company{
+				Name:         uuid.NewString()[:10] + "2",
+				EmployeesNum: &employees,
+				Registered:   &reg,
+				Type:         &tp,
+			})
+			resp, err = client.Do(ctx, http.MethodPut, fmt.Sprintf("http://%s/v1/companies/%s", addr, c.ID), bytes.NewReader(body))
+			require.NoError(t, err)
+			assert.Equal(t, http.StatusCreated, resp.StatusCode)
+		})
+	})
+	t.Run("Delete company", func(t *testing.T) {
+		t.Run("Happy path", func(t *testing.T) {
+			t.Parallel()
+
+			ctx := context.Background()
+
+			client := NewClient(uuid.New(), http.DefaultClient)
+
+			employees := 1
+			reg := true
+			tp := "Corporations"
+			body, _ := json.Marshal(company.Company{
+				Name:         uuid.NewString()[:10],
+				EmployeesNum: &employees,
+				Registered:   &reg,
+				Type:         &tp,
+			})
+
+			resp, err := client.Do(ctx, http.MethodPost, fmt.Sprintf("http://%s/v1/companies", addr), bytes.NewReader(body))
+			require.NoError(t, err)
+			assert.Equal(t, http.StatusCreated, resp.StatusCode)
+			presCmp, err := io.ReadAll(resp.Body)
+			c := company.Company{}
+			err = json.Unmarshal(presCmp, &c)
+			require.NoError(t, err)
+
+			body, _ = json.Marshal(company.Company{
+				Name:         uuid.NewString()[:10] + "2",
+				EmployeesNum: &employees,
+				Registered:   &reg,
+				Type:         &tp,
+			})
+			resp, err = client.Do(ctx, http.MethodDelete, fmt.Sprintf("http://%s/v1/companies/%s", addr, c.ID), bytes.NewReader(body))
+			require.NoError(t, err)
+			assert.Equal(t, http.StatusOK, resp.StatusCode)
+			resp, err = client.Do(ctx, http.MethodGet, fmt.Sprintf("http://%s/v1/companies/%s", addr, c.ID), bytes.NewReader(body))
+			require.NoError(t, err)
+			assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 		})
 	})
 }

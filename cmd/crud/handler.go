@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/a-romancev/crud_task/auth"
 	"github.com/a-romancev/crud_task/company"
@@ -32,7 +33,7 @@ func NewHandler(crud *company.CRUD, producer event.Producer, pk *auth.PublicKey)
 
 	r.HandleFunc("/health", health)
 	r.HandleFunc("/v1/companies", h.companies)
-	r.HandleFunc("/v1/companies/{ID}", h.companiesByID)
+	r.HandleFunc("/v1/companies/", h.companiesByID)
 
 	h.router = r
 	return &h
@@ -106,9 +107,14 @@ func (h *Handler) companies(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) companiesByID(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimPrefix(r.URL.Path, "/v1/companies/")
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		log.Ctx(r.Context()).Error().Err(err).Msg("Failed to parse id.")
+	}
 	switch r.Method {
 	case http.MethodGet:
-		fetched, err := h.crud.Repo.FetchOne(context.Background(), company.Lookup{})
+		fetched, err := h.crud.Repo.FetchOne(context.Background(), company.Lookup{ID: uid})
 		if err != nil {
 			log.Ctx(r.Context()).Error().Err(err).Msg("Failed to fetch companies.")
 			newAPIError(http.StatusBadRequest, "Failed to fetch companies.", err).Write(w)
@@ -117,20 +123,20 @@ func (h *Handler) companiesByID(w http.ResponseWriter, r *http.Request) {
 		apiResponse{Code: http.StatusOK, Body: fetched}.Write(w)
 	case http.MethodPut:
 		var cmp company.Company
-		cmp.ID = uuid.New()
 		err := json.NewDecoder(io.LimitReader(r.Body, bodySizeLimit)).Decode(&cmp)
 		if err != nil {
 			log.Ctx(r.Context()).Error().Err(err).Msg("Invalid company data.")
 			newAPIError(http.StatusBadRequest, "Invalid company data", err).Write(w)
 			return
 		}
+		cmp.ID = uid
 		err = cmp.Validate()
 		if err != nil {
 			log.Ctx(r.Context()).Error().Err(err).Msg("Invalid company data.")
 			newAPIError(http.StatusBadRequest, "Invalid company data", err).Write(w)
 			return
 		}
-		created, err := h.crud.Repo.UpdateOne(r.Context(), company.Lookup{}, cmp)
+		created, err := h.crud.Repo.UpdateOne(r.Context(), company.Lookup{ID: uid}, cmp)
 		if err != nil {
 			log.Ctx(r.Context()).Error().Err(err).Msg("Company creation failed.")
 			newAPIError(http.StatusBadRequest, "Company creation failed.", err).Write(w)
@@ -142,7 +148,7 @@ func (h *Handler) companiesByID(w http.ResponseWriter, r *http.Request) {
 		}
 		apiResponse{Code: http.StatusCreated, Body: created}.Write(w)
 	case http.MethodDelete:
-		err := h.crud.Repo.DeleteOne(r.Context(), company.Lookup{})
+		err := h.crud.Repo.DeleteOne(r.Context(), company.Lookup{ID: uid})
 		if err != nil {
 			log.Ctx(r.Context()).Error().Err(err).Msg("Company creation failed.")
 			newAPIError(http.StatusBadRequest, "Company creation failed.", err).Write(w)
