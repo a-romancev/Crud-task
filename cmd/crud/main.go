@@ -41,7 +41,7 @@ func main() {
 
 	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(fmt.Sprintf(
 		"mongodb://%s:%s@%s/%s",
-		conf.Mongo.Host,
+		conf.Mongo.User,
 		conf.Mongo.Password,
 		conf.Mongo.Host,
 		conf.Mongo.Database,
@@ -49,7 +49,7 @@ func main() {
 	if err != nil {
 		log.Ctx(ctx).Fatal().Err(err).Msg("Failed to connect to mongo.")
 	}
-	mongoDB := mongoClient.Database("company")
+	mongoDB := mongoClient.Database("companies")
 	companyMongo := company.NewMongo(mongoDB)
 	companyCRUD := company.NewCRUD(companyMongo)
 

@@ -8,12 +8,12 @@ import (
 var Types = []string{"Corporations", "NonProfit", "Cooperative", "Sole Proprietorship"}
 
 type Company struct {
-	ID           uuid.UUID `json:"_id"`
-	Name         *string   `json:"name"`
-	Description  string    `json:"description"`
-	EmployeesNum *int      `json:"employees_num"`
-	Registered   *bool     `json:"registered"`
-	Type         *string   `json:"type"`
+	ID           uuid.UUID `json:"_id" bson:"_id"`
+	Name         *string   `json:"name" bson:"name"`
+	Description  string    `json:"description" bson:"description"`
+	EmployeesNum *int      `json:"employees_num" bson:"employees_num"`
+	Registered   *bool     `json:"registered" bson:"registered"`
+	Type         *string   `json:"type" bson:"type"`
 }
 
 func (c Company) Validate() error {

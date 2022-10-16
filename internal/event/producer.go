@@ -2,7 +2,6 @@ package event
 
 import (
 	"github.com/Shopify/sarama"
-	"github.com/rs/zerolog/log"
 )
 
 type KafkaConf struct {
@@ -12,16 +11,16 @@ type KafkaConf struct {
 
 func NewProducer(conf KafkaConf) Producer {
 	p := Producer{}
-	config := sarama.NewConfig()
-	config.Producer.Retry.Max = 5
-	config.Producer.RequiredAcks = sarama.WaitForAll
-	config.Producer.Return.Successes = true
-	prd, err := sarama.NewSyncProducer(conf.Servers, config)
-	if err != nil {
-		log.Fatal().Msg(err.Error())
-	}
-	p.producer = prd
-	p.topic = conf.Topic
+	//config := sarama.NewConfig()
+	//config.Producer.Retry.Max = 5
+	//config.Producer.RequiredAcks = sarama.WaitForAll
+	//config.Producer.Return.Successes = true
+	//prd, err := sarama.NewSyncProducer(conf.Servers, config)
+	//if err != nil {
+	//	log.Fatal().Msg(err.Error())
+	//}
+	//p.producer = prd
+	//p.topic = conf.Topic
 	return p
 }
 
