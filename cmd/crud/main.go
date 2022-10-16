@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/a-romancev/crud_task/company"
+	"github.com/a-romancev/crud_task/internal/event"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -52,9 +53,11 @@ func main() {
 	companyMongo := company.NewMongo(mongoDB)
 	companyCRUD := company.NewCRUD(companyMongo)
 
+	producer := event.NewProducer(conf.Kafka)
+
 	webServer := &http.Server{
 		Addr:    conf.ListenWebAddress,
-		Handler: NewHandler(companyCRUD),
+		Handler: NewHandler(companyCRUD, producer),
 		BaseContext: func(net.Listener) context.Context {
 			return ctx
 		},

@@ -1,13 +1,11 @@
 package main
 
 import (
+	"github.com/a-romancev/crud_task/internal/event"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"log"
 )
-
-type Kafka struct {
-}
 
 type Mongo struct {
 	User     string `mapstructure:"user"`
@@ -17,10 +15,10 @@ type Mongo struct {
 }
 
 type Config struct {
-	ListenWebAddress string `mapstructure:"listen"`
-	LogLevel           string `mapstructure:"loglevel"`
-	Kafka            Kafka  `mapstructure:"kafka"`
-	Mongo            Mongo  `mapstructure:"mongo"`
+	ListenWebAddress string          `mapstructure:"listen"`
+	LogLevel         string          `mapstructure:"loglevel"`
+	Kafka            event.KafkaConf `mapstructure:"kafka"`
+	Mongo            Mongo           `mapstructure:"mongo"`
 }
 
 func (c Config) WithFile(confPath string) Config {
@@ -58,6 +56,12 @@ func (c Config) Validate() error {
 	}
 	if c.Mongo.Password == "" {
 		return errors.New("mongoDB password not set")
+	}
+	if len(c.Kafka.Servers) < 1 {
+		return errors.New("kafka server not set")
+	}
+	if c.Kafka.Topic == "" {
+		return errors.New("kafka topic not set")
 	}
 	return nil
 }

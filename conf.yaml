@@ -8,3 +8,5 @@ mongo:
   database: "companies"
 
 kafka:
+  topic: companies_changes
+  servers: [ "kafka:9092" ]

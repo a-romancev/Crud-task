@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/a-romancev/crud_task/company"
+	"github.com/a-romancev/crud_task/internal/event"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"io"
@@ -13,19 +14,21 @@ import (
 const bodySizeLimit = 1000
 
 type Handler struct {
-	router http.Handler
-	crud   *company.CRUD
+	router        http.Handler
+	crud          *company.CRUD
+	eventProducer event.Producer
 }
 
-func NewHandler(crud *company.CRUD) *Handler {
+func NewHandler(crud *company.CRUD, producer event.Producer) *Handler {
 	h := Handler{crud: crud}
 	r := http.NewServeMux()
 
 	r.HandleFunc("/health", health)
 	r.HandleFunc("/v1/companies", h.companies)
-	r.HandleFunc("/v1/companies:id", h.companiesByID)
+	r.HandleFunc("/v1/companies/{ID}", h.companiesByID)
 
 	h.router = r
+	h.eventProducer = producer
 	return &h
 }
 
@@ -67,6 +70,10 @@ func (h *Handler) companies(w http.ResponseWriter, r *http.Request) {
 			log.Ctx(r.Context()).Error().Err(err).Msg("Company creation failed.")
 			newAPIError(http.StatusBadRequest, "Company creation failed.", err).Write(w)
 			return
+		}
+		err = h.report(cmp)
+		if err != nil {
+			log.Ctx(r.Context()).Error().Err(err).Msg("Failed to report event.")
 		}
 		apiResponse{Code: http.StatusCreated, Body: created}.Write(w)
 	case http.MethodGet:
@@ -115,6 +122,10 @@ func (h *Handler) companiesByID(w http.ResponseWriter, r *http.Request) {
 			newAPIError(http.StatusBadRequest, "Company creation failed.", err).Write(w)
 			return
 		}
+		err = h.report(cmp)
+		if err != nil {
+			log.Ctx(r.Context()).Error().Err(err).Msg("Failed to report event.")
+		}
 		apiResponse{Code: http.StatusCreated, Body: created}.Write(w)
 	case http.MethodDelete:
 		err := h.crud.Repo.DeleteOne(r.Context(), company.Lookup{})
@@ -123,11 +134,28 @@ func (h *Handler) companiesByID(w http.ResponseWriter, r *http.Request) {
 			newAPIError(http.StatusBadRequest, "Company creation failed.", err).Write(w)
 			return
 		}
+		cmp := company.Company{}
+		err = h.report(cmp)
+		if err != nil {
+			log.Ctx(r.Context()).Error().Err(err).Msg("Failed to report event.")
+		}
 		apiResponse{Code: http.StatusOK, Body: ""}.Write(w)
 	default:
 		log.Ctx(r.Context()).Error().Str("method", r.Method).Msg("Http method not allowed.")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
+}
+
+func (h *Handler) report(event company.Company) error {
+	cmpEvent, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+	err = h.eventProducer.Produce(string(cmpEvent))
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 type errBody struct {

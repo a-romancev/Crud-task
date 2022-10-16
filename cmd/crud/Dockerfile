@@ -12,5 +12,6 @@ RUN addgroup -g 1001 -S app && mkdir -p /app && adduser -u 1001 -S -G app -h /ap
 USER app
 WORKDIR /app
 COPY --from=builder --chown=app /app/bin/* /app/
+COPY ./conf.yaml .
 
 CMD ["/app/crud"]
