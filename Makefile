@@ -1,6 +1,5 @@
 .PHONY: start
 start:
-	docker-compose build
 	docker-compose up
 
 .PHONY: build
@@ -17,3 +16,12 @@ create_topic:
     kafka-topics --bootstrap-server broker:9092 \
                  --create \
                  --topic companies_changes
+
+.PHONY: mongo_init
+mongo_init:
+	./mongo/init.sh
+
+.PHONY: init
+init:
+	make mongo_init
+	make create_topic

@@ -10,21 +10,24 @@ services:
       - mongo
       - zookeeper
       - broker
+    networks:
+      - crud
   mongo:
     image: mongo:4.4
     command: "mongod --dbpath /data/db"
     environment:
       - MONGO_INITDB_ROOT_USERNAME=mongo
       - MONGO_INITDB_ROOT_PASSWORD=mongo
-      - MONGO_INITDB_DATABASE=company
-      - MONGO_INITDB_USER=mongodb
-      - MONGO_INITDB_PWD=mongodb
+    networks:
+      - crud
   zookeeper:
     image: confluentinc/cp-zookeeper:7.0.1
     container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - crud
   broker:
     image: confluentinc/cp-kafka:7.0.1
     container_name: broker
@@ -32,6 +35,8 @@ services:
       - "9092:9092"
     depends_on:
       - zookeeper
+    networks:
+      - crud
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
@@ -40,3 +45,7 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+
+networks:
+  crud:
+    name: crud

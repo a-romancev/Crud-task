@@ -2,8 +2,8 @@ listen: 0.0.0.0:9999
 loglevel: info
 
 mongo:
-  user: "mongo"
-  password: "mongo"
+  user: "tuser"
+  password: "tpass"
   host: "mongo"
   database: "companies"
 
