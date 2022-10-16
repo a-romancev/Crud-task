@@ -86,7 +86,7 @@ func (h *Handler) companies(w http.ResponseWriter, r *http.Request) {
 			newAPIError(http.StatusBadRequest, "Company creation failed.", err).Write(w)
 			return
 		}
-		err = h.report(cmp)
+		err = h.report(cmp, "added")
 		if err != nil {
 			log.Ctx(r.Context()).Error().Err(err).Msg("Failed to report event.")
 		}
@@ -142,7 +142,7 @@ func (h *Handler) companiesByID(w http.ResponseWriter, r *http.Request) {
 			newAPIError(http.StatusBadRequest, "Company creation failed.", err).Write(w)
 			return
 		}
-		err = h.report(cmp)
+		err = h.report(cmp, "updated")
 		if err != nil {
 			log.Ctx(r.Context()).Error().Err(err).Msg("Failed to report event.")
 		}
@@ -154,8 +154,8 @@ func (h *Handler) companiesByID(w http.ResponseWriter, r *http.Request) {
 			newAPIError(http.StatusBadRequest, "Company creation failed.", err).Write(w)
 			return
 		}
-		cmp := company.Company{}
-		err = h.report(cmp)
+		cmp := company.Company{ID: uid}
+		err = h.report(cmp, "deleted")
 		if err != nil {
 			log.Ctx(r.Context()).Error().Err(err).Msg("Failed to report event.")
 		}
@@ -166,13 +166,12 @@ func (h *Handler) companiesByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) report(event company.Company) error {
-	return nil
+func (h *Handler) report(event company.Company, ev string) error {
 	cmpEvent, err := json.Marshal(event)
 	if err != nil {
 		return err
 	}
-	err = h.eventProducer.Produce(string(cmpEvent))
+	err = h.eventProducer.Produce(ev + string(cmpEvent))
 	if err != nil {
 		return err
 	}

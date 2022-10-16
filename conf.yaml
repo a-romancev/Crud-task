@@ -14,4 +14,4 @@ mongo:
 
 kafka:
   topic: companies_changes
-  servers: [ "kafka:9092" ]
+  servers: [ "broker:9092" ]
