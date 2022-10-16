@@ -1,0 +1,6 @@
+[
+  {
+    "dropIndexes": "companies",
+    "index": "unique_name"
+  }
+]

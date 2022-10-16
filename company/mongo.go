@@ -2,6 +2,8 @@ package company
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -26,7 +28,7 @@ func (m Mongo) Create(ctx context.Context, request Company) (Company, error) {
 	_, err := m.db.Collection(collection).InsertOne(ctx, request)
 	switch {
 	case mongo.IsDuplicateKeyError(err):
-		return Company{}, errors.New("company already exists")
+		return Company{}, ErrDuplicatedEntry
 	case err != nil:
 		return Company{}, err
 	}
@@ -36,7 +38,10 @@ func (m Mongo) Create(ctx context.Context, request Company) (Company, error) {
 
 func (m Mongo) Fetch(ctx context.Context, lookup Lookup) ([]Company, error) {
 	filter := make(bson.M)
-	filter["_id"] = lookup.ID
+
+	if lookup.ID != uuid.Nil {
+		filter["_id"] = lookup.ID
+	}
 	cur, err := m.db.Collection(collection).Find(
 		ctx,
 		filter,

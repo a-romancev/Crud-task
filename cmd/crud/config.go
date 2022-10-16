@@ -1,10 +1,11 @@
 package main
 
 import (
+	"log"
+
 	"github.com/a-romancev/crud_task/internal/event"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	"log"
 )
 
 type Mongo struct {
@@ -19,6 +20,7 @@ type Config struct {
 	LogLevel         string          `mapstructure:"loglevel"`
 	Kafka            event.KafkaConf `mapstructure:"kafka"`
 	Mongo            Mongo           `mapstructure:"mongo"`
+	PublicKey        string          `mapstructure:"public_key"`
 }
 
 func (c Config) WithFile(confPath string) Config {
@@ -44,6 +46,9 @@ func (c Config) Validate() error {
 	}
 	if c.LogLevel == "" {
 		return errors.New("loglevel not set")
+	}
+	if c.PublicKey == "" {
+		return errors.New("publicKey not set")
 	}
 	if c.Mongo.Host == "" {
 		return errors.New("mongoDB host not set")

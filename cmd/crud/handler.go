@@ -3,12 +3,14 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"io"
+	"net/http"
+
+	"github.com/a-romancev/crud_task/auth"
 	"github.com/a-romancev/crud_task/company"
 	"github.com/a-romancev/crud_task/internal/event"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
-	"io"
-	"net/http"
 )
 
 const bodySizeLimit = 1000
@@ -17,10 +19,15 @@ type Handler struct {
 	router        http.Handler
 	crud          *company.CRUD
 	eventProducer event.Producer
+	pk            *auth.PublicKey
 }
 
-func NewHandler(crud *company.CRUD, producer event.Producer) *Handler {
-	h := Handler{crud: crud}
+func NewHandler(crud *company.CRUD, producer event.Producer, pk *auth.PublicKey) *Handler {
+	h := Handler{
+		crud:          crud,
+		eventProducer: producer,
+		pk:            pk,
+	}
 	r := http.NewServeMux()
 
 	r.HandleFunc("/health", health)
@@ -28,7 +35,6 @@ func NewHandler(crud *company.CRUD, producer event.Producer) *Handler {
 	r.HandleFunc("/v1/companies/{ID}", h.companiesByID)
 
 	h.router = r
-	h.eventProducer = producer
 	return &h
 }
 
@@ -51,14 +57,22 @@ func health(w http.ResponseWriter, _ *http.Request) {
 func (h *Handler) companies(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
+
+		var claims auth.APIClaims
+		err := h.pk.Verify(auth.Token(r), &claims)
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
 		var cmp company.Company
-		cmp.ID = uuid.New()
-		err := json.NewDecoder(io.LimitReader(r.Body, bodySizeLimit)).Decode(&cmp)
+		err = json.NewDecoder(io.LimitReader(r.Body, bodySizeLimit)).Decode(&cmp)
 		if err != nil {
 			log.Ctx(r.Context()).Error().Err(err).Msg("Invalid company data.")
 			newAPIError(http.StatusBadRequest, "Invalid company data.", err).Write(w)
 			return
 		}
+		cmp.ID = uuid.New()
 		err = cmp.Validate()
 		if err != nil {
 			log.Ctx(r.Context()).Error().Err(err).Msg("Invalid company data.")
@@ -147,6 +161,7 @@ func (h *Handler) companiesByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) report(event company.Company) error {
+	return nil
 	cmpEvent, err := json.Marshal(event)
 	if err != nil {
 		return err

@@ -17,6 +17,11 @@ create_topic:
                  --create \
                  --topic companies_changes
 
+.PHONY: migrate
+migrate:
+	./mongo/init.sh
+	./mongo/migrate.sh -source file://migrations/ -database "mongodb://tuser:tpass@mongo:27017/companies" up
+
 .PHONY: mongo_init
 mongo_init:
 	./mongo/init.sh

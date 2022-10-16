@@ -2,14 +2,19 @@ package company
 
 import (
 	"errors"
+
 	"github.com/google/uuid"
+)
+
+var (
+	ErrDuplicatedEntry = errors.New("duplicated company")
 )
 
 var Types = []string{"Corporations", "NonProfit", "Cooperative", "Sole Proprietorship"}
 
 type Company struct {
 	ID           uuid.UUID `json:"_id" bson:"_id"`
-	Name         *string   `json:"name" bson:"name"`
+	Name         string    `json:"name" bson:"name"`
 	Description  string    `json:"description" bson:"description"`
 	EmployeesNum *int      `json:"employees_num" bson:"employees_num"`
 	Registered   *bool     `json:"registered" bson:"registered"`
@@ -20,7 +25,7 @@ func (c Company) Validate() error {
 	if c.ID == uuid.Nil {
 		return errors.New("id should not be empty")
 	}
-	if c.Name == nil {
+	if c.Name == "" {
 		return errors.New("name cannot be empty")
 	}
 	if c.EmployeesNum == nil {
@@ -33,7 +38,7 @@ func (c Company) Validate() error {
 		return errors.New("type cannot be empty")
 	}
 
-	if len(*c.Name) > 15 {
+	if len(c.Name) > 15 {
 		return errors.New("name cannot be more than 15 characters")
 	}
 	if len(c.Description) > 3000 {

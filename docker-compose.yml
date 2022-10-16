@@ -3,7 +3,8 @@ services:
   crud:
     build:
       context: .
-      dockerfile: cmd/crud/Dockerfile
+      dockerfile: Dockerfile
+    command: go run ./cmd/crud/...
     ports:
       - 9999:9999
     depends_on:
@@ -12,6 +13,9 @@ services:
       - broker
     networks:
       - crud
+    volumes:
+      - ./:/app
+
   mongo:
     image: mongo:4.4
     command: "mongod --dbpath /data/db"

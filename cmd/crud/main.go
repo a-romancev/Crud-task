@@ -5,17 +5,19 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"net"
+	"net/http"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/a-romancev/crud_task/auth"
 	"github.com/a-romancev/crud_task/company"
 	"github.com/a-romancev/crud_task/internal/event"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"net"
-	"net/http"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
 func main() {
@@ -39,6 +41,11 @@ func main() {
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
+	pk, err := auth.NewPublicKey(conf.PublicKey)
+	if err != nil {
+		log.Fatal().Msg("Failed to parse public key.")
+	}
+
 	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(fmt.Sprintf(
 		"mongodb://%s:%s@%s/%s",
 		conf.Mongo.User,
@@ -57,7 +64,7 @@ func main() {
 
 	webServer := &http.Server{
 		Addr:    conf.ListenWebAddress,
-		Handler: NewHandler(companyCRUD, producer),
+		Handler: NewHandler(companyCRUD, producer, pk),
 		BaseContext: func(net.Listener) context.Context {
 			return ctx
 		},

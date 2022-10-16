@@ -1,5 +1,10 @@
 listen: 0.0.0.0:9999
 loglevel: info
+public_key: |
+  -----BEGIN PUBLIC KEY-----
+  MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAETrMd0Br7GOpE7US1jJ7LbL0L8vIi
+  3NxRxnXhOxDWaAhd4MxdF17fAY5OGjJpPdWJ8TDMQH7Es98SAB9pVRVZhg==
+  -----END PUBLIC KEY-----
 
 mongo:
   user: "tuser"

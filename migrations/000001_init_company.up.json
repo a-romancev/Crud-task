@@ -1,0 +1,14 @@
+[
+  {
+    "createIndexes": "companies",
+    "indexes": [
+      {
+        "key": {
+          "name": 1
+        },
+        "name": "unique_name",
+        "unique": true
+      }
+    ]
+  }
+]
