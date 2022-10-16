@@ -58,13 +58,15 @@ func main() {
 	}
 	mongoDB := mongoClient.Database("companies")
 	companyMongo := company.NewMongo(mongoDB)
-	companyCRUD := company.NewCRUD(companyMongo)
 
-	producer := event.NewProducer(conf.Kafka)
+	producer := event.NewProducer(event.KafkaConf{
+		Topic:   conf.Kafka.Topic,
+		Servers: conf.Kafka.Servers,
+	})
 
 	webServer := &http.Server{
 		Addr:    conf.ListenWebAddress,
-		Handler: NewHandler(companyCRUD, producer, pk),
+		Handler: NewHandler(companyMongo, producer, pk),
 		BaseContext: func(net.Listener) context.Context {
 			return ctx
 		},

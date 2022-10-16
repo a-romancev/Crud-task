@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 
-	"github.com/a-romancev/crud_task/internal/event"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
@@ -15,12 +14,17 @@ type Mongo struct {
 	Database string `mapstructure:"database"`
 }
 
+type Kafka struct {
+	Servers []string `mapstructure:"servers"`
+	Topic   string   `mapstructure:"topic"`
+}
+
 type Config struct {
-	ListenWebAddress string          `mapstructure:"listen"`
-	LogLevel         string          `mapstructure:"loglevel"`
-	Kafka            event.KafkaConf `mapstructure:"kafka"`
-	Mongo            Mongo           `mapstructure:"mongo"`
-	PublicKey        string          `mapstructure:"public_key"`
+	ListenWebAddress string `mapstructure:"listen"`
+	LogLevel         string `mapstructure:"loglevel"`
+	Kafka            Kafka  `mapstructure:"kafka"`
+	Mongo            Mongo  `mapstructure:"mongo"`
+	PublicKey        string `mapstructure:"public_key"`
 }
 
 func (c Config) WithFile(confPath string) Config {

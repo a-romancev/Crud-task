@@ -12,6 +12,8 @@ var (
 
 var Types = []string{"Corporations", "NonProfit", "Cooperative", "Sole Proprietorship"}
 
+// In real applications domain objects are not used in API. Separate structs would be generated from openAPI or similar.
+// We keep it simple here.
 type Company struct {
 	ID           uuid.UUID `json:"_id" bson:"_id"`
 	Name         string    `json:"name" bson:"name"`

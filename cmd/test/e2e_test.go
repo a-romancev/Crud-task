@@ -117,7 +117,7 @@ func TestAPI(t *testing.T) {
 				Registered:   &reg,
 				Type:         &tp,
 			})
-			resp, err = client.Do(ctx, http.MethodPut, fmt.Sprintf("http://%s/v1/companies/%s", addr, c.ID), bytes.NewReader(body))
+			resp, err = client.Do(ctx, http.MethodPatch, fmt.Sprintf("http://%s/v1/companies/%s", addr, c.ID), bytes.NewReader(body))
 			require.NoError(t, err)
 			assert.Equal(t, http.StatusCreated, resp.StatusCode)
 		})

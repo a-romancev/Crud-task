@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -53,13 +51,6 @@ func clientFromContainer() *mongo.Client {
 		&dockertest.RunOptions{
 			Repository: "mongo",
 			Tag:        "4.4",
-			Cmd:        []string{"mongod", "--replSet", "rs", "--keyFile", "/etc/mongo/mongo-repl.key"},
-			Entrypoint: []string{
-				"bash", "-c", "mkdir /etc/mongo\n" +
-					"openssl rand -base64 768 > /etc/mongo/mongo-repl.key\n" +
-					"chmod 400 /etc/mongo/mongo-repl.key\n" +
-					"chown 999:999 /etc/mongo/mongo-repl.key\n" +
-					"exec docker-entrypoint.sh $@"},
 			Env: []string{
 				"MONGO_INITDB_ROOT_USERNAME=mongo",
 				"MONGO_INITDB_ROOT_PASSWORD=mongo",
@@ -93,31 +84,7 @@ func clientFromContainer() *mongo.Client {
 		if err != nil {
 			return err
 		}
-		res := client.Database("admin").RunCommand(ctx, bson.M{"replSetInitiate": bson.M{
-			"_id": "rs",
-			"members": []bson.M{
-				{"_id": 0, "host": "localhost:27017"},
-			},
-		}})
-		if err := res.Err(); err != nil {
-			fmt.Println(err)
-			return err
-		}
-
-		var repl struct {
-			State int `bson:"myState"`
-		}
-		// Wait for RS to initialize.
-		for repl.State != 1 {
-			time.Sleep(100 * time.Millisecond)
-			res = client.Database("admin").RunCommand(ctx, bson.M{"replSetGetStatus": 1})
-			if err := res.Err(); err != nil {
-				return err
-			}
-			_ = res.Decode(&repl)
-		}
-
-		return nil
+		return client.Ping(ctx, nil)
 	})
 	if err != nil {
 		panic(err)

@@ -5,6 +5,7 @@ company crud test task
 ## Prerequisites
 
 Docker - https://docs.docker.com/engine/install
+Go 1.17 - https://go.dev
 
 ## Architecture
 
@@ -20,6 +21,8 @@ The project follows [Package Oriented Design](https://www.ardanlabs.com/blog/201
 ## Testing and Development
 
 To run all tests run `make test`. To run linters run `make lint`.
+
+To run e2e tests run the project execute `make start` and then `make test_e2e`.
 
 To build the project execute `make build`.
 
